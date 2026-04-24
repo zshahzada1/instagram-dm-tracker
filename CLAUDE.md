@@ -149,3 +149,55 @@ which messages are "mine" vs "hers" and which reactions are mine.
 5. A simple `main.py` or CLI entry point the user can run
 
 Do NOT start building until Prompt 3 is issued.
+
+---
+
+## Environment — WSL migration (2026-04-24)
+
+**Migrated from Windows 11 to Ubuntu WSL2 on 2026-04-24**
+
+### Path Changes
+
+- Project path: `~/instagram-dm-tracker` (was `C:\Users\zhbsh\instagram-dm-tracker`)
+- Virtual environment activation: `source venv/bin/activate` (was `venv\Scripts\activate`)
+- Python: 3.12.3 (system via apt, exceeds 3.10+ requirement)
+
+### System Configuration
+
+- **WSLg**: Confirmed working (DISPLAY=:0, x11-apps installed)
+- **X11 libraries**: All required libs present (libdbus-glib-1-2, libgtk-3-0, libxt6, libasound2, libnss3, libxrandr2, libxkbcommon0)
+- **Additional package installed**: `python3-venv` (required for venv creation)
+
+### Dependencies
+
+- **Camoufox**: v0.4.11 with browser binary v135.0.1-beta.24
+- **Playwright**: v1.58.0 (installed as Camoufox dependency)
+- **Node.js**: v24.15.0 (no gap for P5 React UI)
+
+### Cookies
+
+- Cookies copied from Windows home directory: `~/cookies.json` → `test-cookies/cookies.json`
+- Cookie format: Cookie-Editor JSON (8 cookies loaded successfully)
+
+### Authentication Verification
+
+- **Script**: `scripts/spike_login.py`
+- **Status**: ✅ PASS
+- **Load time**: 16.40s
+- **Evidence**: `artifacts/spike_login.md` (logged-in: True), `artifacts/spike_login.png`
+- **Date**: 2026-04-24 22:15:11
+
+### Artifacts Synced from Windows
+
+- `artifacts/recon_network_v2.json` (2.93MB - full GraphQL capture)
+- `artifacts/recon_reaction_domclick.json` (1.3KB - DOM click spike results)
+- `artifacts/final_spike_result.json` (469B - spike summary)
+
+### Migration Status
+
+✅ **Environment fully operational on WSL2**
+- All dependencies installed and tested
+- Camoufox headed mode verified via WSLg
+- Instagram authentication re-confirmed
+- No regressions detected from Windows setup
+- Ready for Prompt 3 (Scanner Build)

@@ -2,14 +2,14 @@
 venv/
 .venv/
 
-# Test cookies
+# Test cookies (sensitive — keep ignored)
 test-cookies/*.json
 
-# Artifacts and screenshots
-artifacts/*.png
-artifacts/*.md
-artifacts/*.json
-artifacts/*.html
+# Artifacts and screenshots — all tracked now
+# artifacts/*.png
+# artifacts/*.md
+# artifacts/*.json
+# artifacts/*.html
 
 # Python
 __pycache__/

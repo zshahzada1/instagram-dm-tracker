@@ -1,7 +1,7 @@
 # DOM-Click Reaction Findings
 
 **Script:** `scripts/spike_react_domclick.py`
-**Date:** 2026-04-23 (spike not yet run — see sections marked PENDING)
+**Date:** 2026-04-24 (spike completed — DOM click FAILED but mutation was captured)
 **Architecture rule:** DOM-click only for writes. We never POST to `/api/graphql` ourselves.
 
 ---
@@ -39,43 +39,53 @@ reliably triggers the parent bubble's hover state (which reveals the reaction ba
 
 ## B. Reaction smiley button — selectors to try (priority order)
 
-**PENDING verification** — these are derived from IG's known accessibility patterns and will be
-confirmed/corrected after running the spike.
+**CONFIRMED: None of the selectors worked**
 
-| Priority | Selector | Basis |
+| Priority | Selector | Tested? | Result |
 |---|---|---|
-| 1 | `[aria-label="React to message"]` | Expected aria-label from IG accessibility |
-| 2 | `button[aria-label*="React"]` | Looser match, same concept |
-| 3 | `button[aria-label*="react"]` | Lowercase variant |
-| 4 | `[role="toolbar"] button:first-child` | Reaction bar is often a `role=toolbar` row |
-| 5 | `div[role="toolbar"] button` | Fallback if first-child is wrong position |
+| 1 | `[aria-label="React to message"]` | ✅ Yes | ❌ Failed — not found in DOM |
+| 2 | `button[aria-label*="React"]` | ✅ Yes | ❌ Failed — not found in DOM |
+| 3 | `[role="toolbar"] button:first-child` | ✅ Yes | ❌ Failed — not found in DOM |
 
-The script tries all five in order and logs which one works. The emoji reaction bar appears as a
-floating element near the message after hover — it is NOT permanently in the DOM.
+**Critical finding:** The reaction bar did NOT appear on hover as expected. This is the root cause
+of the spike failure. The script successfully found 3 message bubbles and hovered over them, but
+no reaction smiley button became visible for any of the attempted selectors.
 
-### PENDING after spike run:
-- [ ] Which selector actually worked
-- [ ] Was it a `role="toolbar"` or some other container?
-- [ ] Does it appear above or below the message?
+### After spike run:
+- [x] Which selector actually worked: **NONE**
+- [x] Was it a `role="toolbar"` or some other container? **UNKNOWN — reaction bar never appeared**
+- [x] Does it appear above or below the message? **UNKNOWN — reaction bar never appeared**
+
+**Next action required:** Manual investigation needed to understand why the reaction bar doesn't
+appear on hover. Possible causes:
+1. IG may have changed the hover behavior
+2. Session state may affect hover availability (e.g., only the sender can react to their own messages)
+3. Longer hover time may be needed (script used 1.5-2.5s)
+4. Reaction bar may require a different trigger sequence
 
 ---
 
 ## C. Emoji picker — selectors to try
 
+**CONFIRMED: Emoji picker selectors were NOT tested**
+
 After clicking the smiley, a small picker appears with 6–8 common emojis. Selectors:
 
-| Priority | Selector | Basis |
+| Priority | Selector | Tested? | Result |
 |---|---|---|
-| 1 | `[aria-label="❤"]` | Most direct — aria-label on the emoji button |
-| 2 | `button[aria-label="❤"]` | Explicit button + aria-label |
-| 3 | `[role="dialog"] button:first-child` | Heart is often the first option |
-| 4 | `[role="listbox"] [aria-label="❤"]` | Alternative picker container |
-| 5 | `button:has-text("❤")` | Fallback if no aria-label |
+| 1 | `[aria-label="❤"]` | ❌ No | Not tested — reaction bar never appeared |
+| 2 | `button[aria-label="❤"]` | ❌ No | Not tested — reaction bar never appeared |
+| 3 | `[role="dialog"] button:first-child` | ❌ No | Not tested — reaction bar never appeared |
+| 4 | `[role="listbox"] [aria-label="❤"]` | ❌ No | Not tested — reaction bar never appeared |
+| 5 | `button:has-text("❤")` | ❌ No | Not tested — reaction bar never appeared |
 
-### PENDING after spike run:
-- [ ] Which selector worked
-- [ ] What container wraps the emoji picker? (`role="dialog"`, `role="listbox"`, other?)
-- [ ] Order of emojis in the picker (useful if aria-labels aren't set)
+### After spike run:
+- [x] Which selector worked: **NOT APPLICABLE — reaction bar never appeared**
+- [x] What container wraps the emoji picker? **NOT APPLICABLE — emoji picker never rendered**
+- [x] Order of emojis in the picker: **NOT APPLICABLE — emoji picker never rendered**
+
+**Root cause:** The script never progressed to emoji picker testing because the reaction smiley
+button could not be found in the DOM after hovering over message bubbles.
 
 ---
 
@@ -97,18 +107,28 @@ emoji_btn = page.locator('[aria-label="❤"]').first
 emoji_btn.click()
 ```
 
-### PENDING after spike run:
-- [ ] Confirm which locators resolved without timeout
-- [ ] Note any `delay=` parameter needed on hover/click
-- [ ] Note if `force=True` was needed on any step
+### After spike run:
+- [x] Confirm which locators resolved without timeout: **Step 1 completed (hover successful), Step 2 failed (all 3 selectors timed out)**
+- [x] Note any `delay=` parameter needed on hover/click: **Standard hover worked, but reaction bar never appeared**
+- [x] Note if `force=True` was needed on any step: **Not applicable — buttons were never found**
+
+**Actual execution sequence:**
+1. ✅ Successfully found 3 message bubbles using `img[src*="cdninstagram"]`
+2. ✅ Successfully hovered over each bubble (scroll_into_view_if_needed + hover)
+3. ✅ Waited random.uniform(1.5, 2.5) seconds after hover
+4. ❌ All 3 reaction button selectors failed to find elements (timeout)
+5. ❌ Script did not progress to emoji picker testing
+
+**Failure point:** After successful hover, the reaction bar that should contain the smiley button
+did NOT appear in the DOM, despite using standard Playwright hover and waiting 1.5-2.5 seconds.
 
 ---
 
 ## E. Network verification result
 
-**PENDING — fill in after running spike**
+**CONFIRMED: Mutation was captured despite DOM click failure**
 
-Expected: capture one entry in `artifacts/recon_reaction_domclick.json` with:
+Captured entry in `artifacts/recon_reaction_domclick.json`:
 ```json
 {
   "friendly_name": "IGDirectReactionSendMutation",
@@ -116,19 +136,37 @@ Expected: capture one entry in `artifacts/recon_reaction_domclick.json` with:
   "variables": {
     "input": {
       "emoji": "❤",
-      "message_id": "mid.$...",
-      "thread_id": "<internal thread id>",
+      "item_id": "",
+      "message_id": "mid.$cAAA5JGhAguej63PGlWdui59rIK-u",
       "reaction_status": "created",
-      "item_id": ""
+      "thread_id": "1198812947547839"
     }
   }
 }
 ```
 
-- [ ] Did the mutation fire? Y/N
-- [ ] HTTP status: ___
-- [ ] `message_id` captured: ___
-- [ ] Screenshot `spike_react_after.png` shows reaction emoji on the message? Y/N
+- [x] Did the mutation fire? **Yes — but NOT from the automated DOM click**
+- [x] HTTP status: **200 (successful)**
+- [x] `message_id` captured: **mid.$cAAA5JGhAguej63PGlWdui59rIK-u**
+- [x] Screenshot `spike_react_after.png` shows reaction emoji on the message? **NO — this file does not exist**
+
+**Critical discrepancy:** The mutation fired successfully with HTTP 200 status, but:
+1. The DOM click automation failed (`dom_click_success: false`)
+2. No `spike_react_after.png` screenshot exists (only `spike_react_failed.png`)
+3. The mutation timestamp (03:39:53) is 42 seconds before the spike completion timestamp (03:40:35)
+
+**Explanation:** The captured mutation is likely from a manual reaction performed by the user during
+the session, NOT from the automated DOM click. The script's network interceptor correctly captured
+a reaction mutation, but it was not triggered by the automated click sequence.
+
+**Verification that this mutation structure is correct:** ✅
+- Doc ID `24374451552236906` matches expected IGDirectReactionSendMutation
+- All expected variables present: `emoji`, `message_id`, `thread_id`, `reaction_status`, `item_id`
+- Response structure confirms reaction was added to the message
+- HTTP 200 confirms IG accepted the reaction
+
+**Conclusion:** The mutation structure is validated and correct, but the DOM click automation needs
+debugging. The reaction bar is not appearing on hover as expected.
 
 ---
 
@@ -173,43 +211,82 @@ If the target message is not visible, the scanner must scroll until it appears.
 Scroll the `[data-pagelet="IGDMessagesList"]` container itself (not `window.scrollBy`) to
 avoid triggering extra feed loads.
 
-### PENDING after spike run:
-- [ ] Confirm the `<a href="/handle/">` link is consistently present near media bubbles
-- [ ] Confirm whether `<time>` elements are present (they were NOT in the initial recon DOM)
-- [ ] Determine scrollable container selector for the message pane
+### After spike run:
+- [x] Confirm the `<a href="/handle/">` link is consistently present near media bubbles: **NOT CONFIRMED — reaction bar never appeared**
+- [x] Confirm whether `<time>` elements are present: **NOT CONFIRMED — reaction bar never appeared**
+- [x] Determine scrollable container selector for the message pane: **NOT CONFIRMED — reaction bar never appeared**
+
+**Blocker:** Since the reaction bar never appeared on hover, the spike could not progress to testing
+the DOM fingerprint matching logic. The message bubble identification strategy needs to be manually
+verified in a working environment before proceeding with implementation.
+
+**Note:** The spike successfully found 3 message bubbles using `img[src*="cdninstagram"]`, confirming
+that the basic bubble identification works. The blocker is specifically the reaction bar appearance
+on hover, not the bubble identification.
 
 ---
 
 ## G. Failure modes observed
 
-**PENDING — fill in after spike run**
+**CONFIRMED: Multiple failures observed**
 
 | Failure | Observed? | Notes |
 |---|---|---|
-| Reaction bar did not appear on hover | ? | May need longer hover wait or `force=True` |
-| Smiley button selector didn't match | ? | Script falls back to manual selector input |
-| Emoji picker didn't render | ? | May need extra settle time |
-| Mutation fired but HTTP non-200 | ? | Session expired? Rate limited? |
-| Selector worked in one thread but not another | ? | Check if aria-labels are consistent across IG locales |
+| Reaction bar did not appear on hover | ✅ **YES** | PRIMARY FAILURE — root cause of spike failure |
+| Smiley button selector didn't match | ✅ **YES** | All 3 selectors timed out because reaction bar never appeared |
+| Emoji picker didn't render | ✅ **YES** | Never tested — script failed before reaching this step |
+| Mutation fired but HTTP non-200 | ❌ NO | Mutation fired with HTTP 200 (but likely from manual user action) |
+| Selector worked in one thread but not another | ❌ NO | No selectors worked in any thread |
+
+**Detailed failure analysis:**
+1. **Reaction bar failure:** Despite successful hover on 3 different message bubbles with 1.5-2.5s wait,
+   no reaction bar appeared. This is the critical blocker.
+2. **Selector failure:** All 3 selector attempts (`[aria-label="React to message"]`,
+   `button[aria-label*="React"]`, `[role="toolbar"] button:first-child`) timed out consistently.
+3. **Session state:** The mutation that was captured suggests the Instagram session was valid and capable
+   of sending reactions, but the automated click sequence did not work as expected.
+
+**Potential root causes (requires manual investigation):**
+- IG may require a different interaction sequence (e.g., click-then-hover, or specific element target)
+- The session may not have permission to react to the specific messages (sender vs recipient rules)
+- IG's reaction bar may have changed UI/behavior since the selectors were designed
+- The hover timing may need to be extended beyond 2.5s
+- The message bubbles may need to be in a specific state (fully loaded, in viewport, etc.)
 
 ---
 
 ## H. Summary — what to hard-code in the scanner
 
-**PENDING full confirmation, but likely:**
+**CONFIRMED PARTIALLY — Critical blocker needs resolution:**
 
 ```python
+# ✅ CONFIRMED WORKING
 MSG_LIST = '[data-pagelet="IGDMessagesList"]'
 MEDIA_IMG = 'img[src*="cdninstagram.com"]'
-REACT_BTN = '[aria-label="React to message"]'  # or confirmed alternative
-HEART_BTN = '[aria-label="❤"]'                 # or confirmed alternative
+
+# ❌ NOT CONFIRMED — Reaction bar never appeared
+REACT_BTN = '[aria-label="React to message"]'  # FAILED — selector not found
+HEART_BTN = '[aria-label="❤"]'                 # NOT TESTED — reaction bar never appeared
 ```
 
-Scroll container for the message pane: **TBD** — test `[data-pagelet="IGDMessagesList"]`
-scrollable ancestor vs. the inner div.
+**Scroll container for the message pane:** **NOT CONFIRMED** — Message bubble identification works,
+but cannot test scrolling for reaction targeting until reaction bar issue is resolved.
+
+**Critical next step:** Manual investigation required to understand why the reaction bar does not
+appear on hover. This is a blocker for proceeding with Prompt 3 (Scanner Build) until resolved.
+
+**What we know works:**
+- Finding message bubbles using `img[src*="cdninstagram"]`
+- Basic hover interaction on message bubbles
+- Network interception for GraphQL mutations (successfully captured reaction mutation structure)
+
+**What doesn't work:**
+- Reaction bar appearance on hover (primary blocker)
+- Any reaction button selector (all failed due to reaction bar not appearing)
+- Emoji picker interaction (not tested due to above failures)
 
 ---
 
-*This document is a pre-populated template. Fill in all PENDING sections after running
-`scripts/spike_react_domclick.py` and reviewing `artifacts/recon_reaction_domclick.json`
-and the spike screenshots.*
+*This document has been updated with findings from the spike run. **DOM click automation failed**
+due to reaction bar not appearing on hover. The mutation structure is validated, but the reaction
+automation needs debugging before proceeding with Prompt 3.*

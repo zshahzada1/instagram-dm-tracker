@@ -5,11 +5,8 @@ venv/
 # Test cookies (sensitive — keep ignored)
 test-cookies/*.json
 
-# Artifacts and screenshots — all tracked now
-# artifacts/*.png
-# artifacts/*.md
-# artifacts/*.json
-# artifacts/*.html
+# Artifacts - never commit, too large for project context
+artifacts/
 
 # Python
 __pycache__/

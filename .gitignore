@@ -1,0 +1,45 @@
+# Virtual environment
+venv/
+.venv/
+
+# Test cookies
+test-cookies/*.json
+
+# Artifacts and screenshots
+artifacts/*.png
+artifacts/*.md
+artifacts/*.json
+artifacts/*.html
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

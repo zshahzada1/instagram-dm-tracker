@@ -37,7 +37,7 @@ All key API parameters confirmed. See `docs/thread_recon_v2.md` for full finding
 ### Querying thread messages
 
 - **Query name:** `IGDThreadDetailMainViewContainerQuery`
-- **Doc ID:** `26562617700073112`
+- **Doc ID:** `26917452957851502` (as of 2026-04-25; was `26562617700073112` on 2026-04-23 — doc IDs rotate, use `fb_api_req_friendly_name` to filter, never hardcode doc_id)
 - **Variable:** `thread_fbid` = the numeric segment from the thread URL (also called `interop_messaging_user_fbid` or `thread_key`)
 - **Response path:** `data.get_slide_thread_nullable.as_ig_direct_thread.slide_messages.edges[N].node`
 - **Page size:** 20 messages per query

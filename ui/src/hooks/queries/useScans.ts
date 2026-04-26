@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { getScans, getScan } from '../../api/scans';
-import { ScanRun } from '../../types/api';
 
 export function useScans(params?: { thread_id?: number; limit?: number }) {
   return useQuery({

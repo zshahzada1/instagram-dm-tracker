@@ -40,6 +40,16 @@ export interface ItemsListResponse {
   items: Item[];
 }
 
+export interface ItemsParams {
+  thread_id?: number;
+  watched?: boolean;
+  item_type?: 'reel' | 'post' | 'carousel' | 'story';
+  sender?: 'me' | 'her' | 'all';
+  sort?: 'sent_at_desc' | 'sent_at_asc' | 'first_seen_desc';
+  limit?: number;
+  offset?: number;
+}
+
 export interface ItemWatchedUpdate {
   watched: boolean;
 }

@@ -1,24 +1,31 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-ig-background: #121212;
+  --color-ig-surface: #1e1e1e;
+  --color-ig-border: #2a2a2a;
+  --color-ig-text: #fafafa;
+  --color-ig-muted: #a0a0a0;
+  --color-ig-accent: #0095f6;
+}
 
 @layer base {
   body {
-    @apply bg-ig-background text-ig-text antialiased;
+    background-color: var(--color-ig-background);
+    color: var(--color-ig-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   * {
-    @apply border-ig-border;
+    border-color: var(--color-ig-border);
   }
 }
 
-@layer utilities {
-  .scrollbar-hide::-webkit-scrollbar {
+@utility scrollbar-hide {
+  &::-webkit-scrollbar {
     display: none;
   }
-
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

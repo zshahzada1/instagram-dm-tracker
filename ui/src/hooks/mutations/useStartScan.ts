@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { startScan } from '../../api/scans';
-import { ScanStartRequest, ScanResponse } from '../../types/api';
+import { ScanStartRequest } from '../../types/api';
 
 export function useStartScan() {
   const queryClient = useQueryClient();

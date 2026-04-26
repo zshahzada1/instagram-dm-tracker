@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { getThreads, getThread } from '../../api/threads';
-import { Thread } from '../../types/api';
 
 export function useThreads() {
   return useQuery({

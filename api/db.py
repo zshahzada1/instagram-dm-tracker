@@ -13,7 +13,7 @@ def get_db() -> Generator[sqlite3.Connection, None, None]:
 
     The connection is automatically closed when the request completes.
     """
-    conn = sqlite3.connect("instagram_dm_tracker.db")
+    conn = sqlite3.connect("instagram_dm_tracker.db", check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     try:

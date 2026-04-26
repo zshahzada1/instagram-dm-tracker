@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { getItems, getItem } from '../../api/items';
-import { ItemsParams, ItemsListResponse, Item } from '../../types/api';
+import { ItemsParams } from '../../types/api';
 
 export function useItems(params?: ItemsParams) {
   return useQuery({

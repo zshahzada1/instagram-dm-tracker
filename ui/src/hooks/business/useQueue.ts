@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { getItems } from '../../api/items';
-import { ItemsParams, ItemsListResponse } from '../../types/api';
 
 export interface QueueFilters {
   watched?: boolean;

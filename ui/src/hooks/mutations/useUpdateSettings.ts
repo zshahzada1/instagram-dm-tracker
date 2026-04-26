@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateSetting } from '../../api/settings';
-import { Setting } from '../../types/api';
 
 export function useUpdateSettings() {
   const queryClient = useQueryClient();

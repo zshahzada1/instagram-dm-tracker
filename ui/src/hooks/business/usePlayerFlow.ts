@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { getItems, getItem } from '../../api/items';
-import { Item } from '../../types/api';
 
 export function useNextUnwatchedItem(
   threadId: number,

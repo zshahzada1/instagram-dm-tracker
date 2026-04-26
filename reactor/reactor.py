@@ -390,6 +390,11 @@ def send_reaction(
             "UPDATE items SET my_auto_sent_reaction = ?, updated_at = ? WHERE id = ?",
             (emoji, datetime.now(timezone.utc).isoformat(), item_id),
         )
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE items SET watched=1, updated_at=datetime('now') WHERE id=?",
+            (item_id,)
+        )
         conn.commit()
         conn.close()
         print(f"  DB updated: my_auto_sent_reaction = '{emoji}' for item {item_id}")

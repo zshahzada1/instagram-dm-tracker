@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import threads, items, scans, settings, reactor
+from api.routes import threads, items, scans, settings, reactor, comments
 
 app = FastAPI(
     title="Instagram DM Tracker API",
@@ -30,6 +30,7 @@ app.include_router(items.router)
 app.include_router(scans.router)
 app.include_router(settings.router)
 app.include_router(reactor.router)
+app.include_router(comments.router)
 
 
 @app.get("/")
@@ -45,6 +46,7 @@ def root():
             "scans": "/scans",
             "settings": "/settings",
             "reactor": "/reactor",
+            "comments": "/comments",
         },
     }
 

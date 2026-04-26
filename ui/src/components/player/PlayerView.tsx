@@ -1,14 +1,16 @@
+import { useState } from 'react';
 import { useItem } from '../../hooks/queries/useItems';
 import { useUpdateWatched } from '../../hooks/mutations/useUpdateWatched';
 import { useReact } from '../../hooks/mutations/useReact';
 import { useNextUnwatchedItem } from '../../hooks/business/usePlayerFlow';
 import { EmbedPlayer } from './EmbedPlayer';
+import { CommentsPanel } from './CommentsPanel';
 import { Button } from '../ui/button';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useSettings } from '../../hooks/queries/useSettings';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MessageCircle } from 'lucide-react';
 
 interface PlayerViewProps {
   threadId: number;
@@ -22,6 +24,7 @@ export function PlayerView({ threadId, itemId }: PlayerViewProps) {
   const { mutate: sendReactionMutate, isPending: isReacting } = useReact();
   const { data: nextItem, isLoading: isLoadingNext } = useNextUnwatchedItem(threadId, itemId);
   const { data: settings } = useSettings();
+  const [showComments, setShowComments] = useState(false);
 
   const autoNextEnabled = settings?.find(s => s.key === 'auto_next_enabled')?.value === '1';
 
@@ -158,15 +161,22 @@ export function PlayerView({ threadId, itemId }: PlayerViewProps) {
             'Send heart ❤'
           )}
         </Button>
+        <Button
+          variant="outline"
+          onClick={() => setShowComments(!showComments)}
+          size="lg"
+        >
+          <MessageCircle className="mr-2 h-4 w-4" />
+          {showComments ? 'Hide comments' : 'Comments'}
+        </Button>
       </div>
 
-      {/* Comments placeholder */}
-      <div className="rounded-lg border border-ig-border bg-ig-surface p-6">
-        <h2 className="mb-4 text-lg font-semibold text-ig-text">Comments</h2>
-        <div className="text-ig-muted">
-          Comments and comment reactions are coming in Phase 7.
-        </div>
-      </div>
+      {/* Comments Panel */}
+      <CommentsPanel
+        itemId={item.id}
+        visible={showComments}
+        onClose={() => setShowComments(false)}
+      />
     </div>
   );
 }

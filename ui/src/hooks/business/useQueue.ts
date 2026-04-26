@@ -7,20 +7,7 @@ export interface QueueFilters {
   sort?: 'sent_at_desc' | 'sent_at_asc';
 }
 
-export function useQueue(threadId: number, filters: QueueFilters = {}) {
-  return useQuery({
-    queryKey: ['queue', threadId, filters],
-    queryFn: () =>
-      getItems({
-        thread_id: threadId,
-        sender: 'her', // Default to showing only her messages
-        limit: 24,
-        ...filters,
-      }),
-  });
-}
-
-export function useLoadMore(threadId: number, offset: number, filters: QueueFilters = {}) {
+export function useQueue(threadId: number, offset: number, filters: QueueFilters = {}) {
   return useQuery({
     queryKey: ['queue', threadId, offset, filters],
     queryFn: () =>
@@ -31,6 +18,5 @@ export function useLoadMore(threadId: number, offset: number, filters: QueueFilt
         offset,
         ...filters,
       }),
-    enabled: offset > 0, // Only enable if we're loading more
   });
 }

@@ -30,7 +30,7 @@ export function ItemCard({ item }: ItemCardProps) {
         </div>
 
         {/* Type badge */}
-        <div className="absolute right-2 top-2">
+        <div className="absolute right-2 top-2 z-10">
           <Badge
             variant={item.watched ? 'secondary' : 'default'}
             className="text-xs"
@@ -41,19 +41,19 @@ export function ItemCard({ item }: ItemCardProps) {
 
         {/* Watched indicator */}
         {item.watched && (
-          <div className="absolute bottom-2 right-2 h-3 w-3 rounded-full bg-green-500" />
+          <div className="absolute bottom-2 right-2 z-10 h-3 w-3 rounded-full bg-green-500" />
         )}
 
         {/* Expired overlay for stories */}
         {item.item_type === 'story' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-white text-sm font-semibold">
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 text-white text-sm font-semibold">
             EXPIRED
           </div>
         )}
 
         {/* Reaction indicator */}
         {item.my_existing_reaction && (
-          <div className="absolute bottom-2 left-2 text-lg">
+          <div className="absolute bottom-2 left-2 z-10 text-lg">
             {item.my_existing_reaction}
           </div>
         )}

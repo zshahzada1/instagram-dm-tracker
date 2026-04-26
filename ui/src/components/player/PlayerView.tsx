@@ -17,7 +17,7 @@ export function PlayerView({ threadId, itemId }: PlayerViewProps) {
   const navigate = useNavigate();
   const { data: item, isLoading, error } = useItem(itemId);
   const { mutate: updateWatched, isPending: isUpdatingWatched } = useUpdateWatched();
-  const { data: nextItem } = useNextUnwatchedItem(threadId, itemId);
+  const { data: nextItem, isLoading: isLoadingNext } = useNextUnwatchedItem(threadId, itemId);
   const { data: settings } = useSettings();
 
   const autoNextEnabled = settings?.find(s => s.key === 'auto_next_enabled')?.value === '1';
@@ -112,7 +112,7 @@ export function PlayerView({ threadId, itemId }: PlayerViewProps) {
       <div className="flex items-center justify-center gap-4">
         <Button
           onClick={handleMarkWatched}
-          disabled={isUpdatingWatched}
+          disabled={isUpdatingWatched || isLoadingNext}
           size="lg"
         >
           {item.watched ? 'Mark unwatched' : 'Mark watched'}

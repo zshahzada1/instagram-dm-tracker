@@ -53,60 +53,72 @@ export function AddThreadModal({ open, onOpenChange }: AddThreadModalProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={isScanning ? () => {} : onOpenChange}>
       <DialogHeader>
-        <DialogTitle>Add Thread</DialogTitle>
+        <DialogTitle>{isScanning ? 'Scanning Thread…' : 'Add Thread'}</DialogTitle>
       </DialogHeader>
 
       <DialogContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-ig-text">
-              Instagram DM thread URL
-            </label>
-            <Input
-              type="url"
-              placeholder="https://www.instagram.com/direct/t/..."
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              disabled={isScanning}
-            />
-            <p className="mt-2 text-xs text-ig-muted">
-              Each thread is tracked separately. Adding bel's DMs and someone else's keeps them isolated — they don't mix.
-            </p>
+        {isScanning ? (
+          <div className="flex flex-col items-center space-y-4 py-8">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-ig-border border-t-ig-accent" />
+            <div className="text-center">
+              <div className="text-lg font-semibold text-ig-text">Scanning thread…</div>
+              <div className="mt-2 text-ig-muted">
+                This can take up to a minute. A Camoufox browser window will open on your machine during the scan — that's normal, leave it alone.
+              </div>
+            </div>
           </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-ig-text">
+                Instagram DM thread URL
+              </label>
+              <Input
+                type="url"
+                placeholder="https://www.instagram.com/direct/t/..."
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                disabled={isScanning}
+              />
+              <p className="mt-2 text-xs text-ig-muted">
+                Each thread is tracked separately. Adding bel's DMs and someone else's keeps them isolated — they don't mix.
+              </p>
+            </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-medium text-ig-text">
-              Max messages
-            </label>
-            <Input
-              type="number"
-              min="50"
-              max="2000"
-              value={maxMessages}
-              onChange={(e) => setMaxMessages(parseInt(e.target.value) || 200)}
-              disabled={isScanning}
-            />
-            <p className="mt-2 text-xs text-ig-muted">
-              Range: 50-2000 messages. Default: 200.
-            </p>
-          </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-ig-text">
+                Max messages
+              </label>
+              <Input
+                type="number"
+                min="50"
+                max="2000"
+                value={maxMessages}
+                onChange={(e) => setMaxMessages(parseInt(e.target.value) || 200)}
+                disabled={isScanning}
+              />
+              <p className="mt-2 text-xs text-ig-muted">
+                Range: 50-2000 messages. Default: 200.
+              </p>
+            </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isScanning}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isScanning || !url}>
-              {isScanning ? 'Starting scan...' : 'Start scan'}
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isScanning}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isScanning || !url}>
+                Start scan
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );

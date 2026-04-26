@@ -3,36 +3,83 @@ import { ItemCard, ItemCardSkeleton } from './ItemCard';
 import { Button } from '../ui/button';
 import { Select } from '../ui/select';
 import { useThreads } from '../../hooks/queries/useThreads';
+import { useSettings } from '../../hooks/queries/useSettings';
 import { useStartScan } from '../../hooks/mutations/useStartScan';
-import { useState } from 'react';
+import { ScanModal } from '../modals/ScanModal';
+import { useState, useEffect, useRef } from 'react';
+import { Item } from '../../types/api';
 
 interface QueueGridProps {
   threadId: number;
 }
 
 export function QueueGrid({ threadId }: QueueGridProps) {
+  const { data: settings } = useSettings();
+  const settingsSort = settings?.find(s => s.key === 'sort_order')?.value as 'sent_at_desc' | 'sent_at_asc' || 'sent_at_desc';
+  const userChangedSortRef = useRef(false);
+
   const [filters, setFilters] = useState({
     watched: undefined as boolean | undefined,
     item_type: undefined as 'reel' | 'post' | 'carousel' | 'story' | undefined,
-    sort: 'sent_at_desc' as 'sent_at_desc' | 'sent_at_asc',
+    sort: settingsSort,
   });
 
-  const { data: queue, isLoading, error, refetch } = useQueue(threadId, filters);
+  // Apply settings sort on first load only if user hasn't manually changed
+  useEffect(() => {
+    if (settings && !userChangedSortRef.current) {
+      setFilters(prev => ({ ...prev, sort: settingsSort }));
+    }
+  }, [settings, settingsSort]);
+
+  const [offset, setOffset] = useState(0);
+  const [allItems, setAllItems] = useState<Item[]>([]);
+  const [total, setTotal] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isScanningNow, setIsScanningNow] = useState(false);
+
+  const { data: queue, isLoading, error, refetch } = useQueue(threadId, offset, filters);
   const { mutate: startScan } = useStartScan();
   const { data: threads } = useThreads();
 
   const thread = threads?.find(t => t.id === threadId);
 
+  // Reset pagination when threadId or filters change
+  useEffect(() => {
+    setOffset(0);
+    setAllItems([]);
+    setTotal(0);
+  }, [threadId, filters.watched, filters.item_type, filters.sort]);
+
+  // Accumulate items when queue data arrives
+  useEffect(() => {
+    if (queue) {
+      setTotal(queue.total);
+      if (offset === 0) {
+        setAllItems(queue.items);
+      } else {
+        setAllItems(prev => [...prev, ...queue.items]);
+      }
+      setIsLoadingMore(false);
+    }
+  }, [queue, offset]);
+
+  const hasMore = allItems.length < total;
+
   const handleScanNowInternal = () => {
     if (!thread) return;
+
+    setIsScanningNow(true);
 
     startScan(
       { thread_url: thread.thread_url, max_messages: 200 },
       {
         onSuccess: () => {
+          setIsScanningNow(false);
+          setOffset(0);
           refetch();
         },
         onError: (error) => {
+          setIsScanningNow(false);
           if (error.message.includes('Scan already in progress')) {
             // Toast already shown by mutation error handling
           }
@@ -42,10 +89,16 @@ export function QueueGrid({ threadId }: QueueGridProps) {
   };
 
   const handleLoadMore = () => {
-    refetch();
+    setIsLoadingMore(true);
+    setOffset(prev => prev + 24);
   };
 
-  if (isLoading) {
+  const handleSortChange = (value: string) => {
+    userChangedSortRef.current = true;
+    setFilters({ ...filters, sort: value as 'sent_at_desc' | 'sent_at_asc' });
+  };
+
+  if (isLoading && offset === 0) {
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <ItemCardSkeleton count={8} />
@@ -53,7 +106,7 @@ export function QueueGrid({ threadId }: QueueGridProps) {
     );
   }
 
-  if (error) {
+  if (error && offset === 0) {
     return (
       <div className="flex h-96 items-center justify-center">
         <div className="text-center">
@@ -64,7 +117,7 @@ export function QueueGrid({ threadId }: QueueGridProps) {
     );
   }
 
-  if (!queue || queue.items.length === 0) {
+  if (allItems.length === 0 && !isLoading) {
     return (
       <div className="flex h-96 items-center justify-center">
         <div className="text-center">
@@ -82,7 +135,7 @@ export function QueueGrid({ threadId }: QueueGridProps) {
         <div>
           <h1 className="text-2xl font-semibold text-ig-text">{thread?.display_name}</h1>
           <div className="text-ig-muted">
-            @{thread?.participant_handle} • {queue.total} items • {thread?.unwatched_count} unwatched
+            @{thread?.participant_handle} • {total} items • {thread?.unwatched_count} unwatched
           </div>
         </div>
 
@@ -90,7 +143,7 @@ export function QueueGrid({ threadId }: QueueGridProps) {
           {/* Sort toggle */}
           <Select
             value={filters.sort}
-            onChange={(e) => setFilters({ ...filters, sort: e.target.value as 'sent_at_desc' | 'sent_at_asc' })}
+            onChange={(e) => handleSortChange(e.target.value)}
           >
             <option value="sent_at_desc">Newest first</option>
             <option value="sent_at_asc">Oldest first</option>
@@ -139,19 +192,23 @@ export function QueueGrid({ threadId }: QueueGridProps) {
 
       {/* Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {queue.items.map((item) => (
+        {allItems.map((item) => (
           <ItemCard key={item.id} item={item} />
         ))}
+        {(isLoading || isLoadingMore) && <ItemCardSkeleton count={4} />}
       </div>
 
       {/* Load more */}
-      {queue.items.length < queue.total && (
+      {hasMore && (
         <div className="flex justify-center">
-          <Button variant="outline" onClick={handleLoadMore}>
-            Load more
+          <Button variant="outline" onClick={handleLoadMore} disabled={isLoadingMore}>
+            {isLoadingMore ? 'Loading...' : 'Load more'}
           </Button>
         </div>
       )}
+
+      {/* Scan modal */}
+      <ScanModal open={isScanningNow} />
     </div>
   );
 }

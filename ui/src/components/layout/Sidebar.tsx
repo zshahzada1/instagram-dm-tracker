@@ -3,10 +3,13 @@ import { useThreads } from '../../hooks/queries/useThreads';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { useScans } from '../../hooks/queries/useScans';
+import { AddThreadModal } from '../modals/AddThreadModal';
+import { useState } from 'react';
 
 export function Sidebar() {
   const { data: threads, isLoading, error } = useThreads();
   const { data: scans } = useScans({ limit: 1 });
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Check if scan is running
   const isScanning = scans?.some(scan => scan.status === 'running');
@@ -67,7 +70,7 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="border-t border-ig-border p-4">
-        <Button variant="outline" className="w-full justify-start" onClick={() => {/* TODO: Open add thread modal */}}>
+        <Button variant="outline" className="w-full justify-start" onClick={() => setIsAddModalOpen(true)}>
           + Add thread
         </Button>
         <Link to="/settings" className="block mt-2 text-sm text-ig-muted hover:text-ig-text transition-colors">
@@ -86,6 +89,8 @@ export function Sidebar() {
           )}
         </div>
       </div>
+
+      <AddThreadModal open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />
     </aside>
   );
 }

@@ -309,6 +309,71 @@ Note: Only existing settings can be updated. New keys cannot be created via this
 
 ---
 
+### Reactor
+
+#### POST /reactor/react
+
+Send a reaction to an Instagram DM message via DOM-click.
+
+**Request Body:**
+```json
+{
+  "item_id": 42,
+  "emoji": "❤",
+  "dry_run": false
+}
+```
+
+- `item_id` (int, required) — Database ID of the item to react to.
+- `emoji` (string, default: `"❤"`) — Single emoji character to send.
+- `dry_run` (bool, default: `false`) — If true, logs intent but does not open a browser.
+
+**Behavior:**
+- Opens a real browser via Camoufox to click Instagram's UI.
+- Takes 30-60 seconds to complete.
+- On success, updates `items.my_auto_sent_reaction` in the database.
+
+**Success Response (200):**
+```json
+{
+  "status": "success",
+  "emoji": "❤",
+  "message_id": "mid.$cAAA5JGhAguej63PGlWdui59rIK-u",
+  "mutation_confirmed": true,
+  "item_id": 42
+}
+```
+
+**Dry Run Response (200):**
+```json
+{
+  "status": "dry_run",
+  "would_react_with": "❤",
+  "item_id": 42,
+  "poster_handle": "clipsngl",
+  "ig_message_id": "mid.$cAAA5JGhAguej63PGlWdui59rIK-u"
+}
+```
+
+**Already Reacted Response (200):**
+```json
+{
+  "status": "already_reacted",
+  "emoji": "❤",
+  "skipped": true,
+  "item_id": 42,
+  "source": "my_existing_reaction"
+}
+```
+
+**Error Responses:**
+- `404 Not Found` — Item not found in database.
+- `422 Unprocessable Entity` — Bubble not found, react button not found, or emoji not found in picker.
+- `500 Internal Server Error` — Instagram blocker detected.
+- `502 Bad Gateway` — Mutation not confirmed after clicking.
+
+---
+
 ## CORS
 
 The API is configured to allow requests from:

@@ -1,5 +1,6 @@
 import { useItem } from '../../hooks/queries/useItems';
 import { useUpdateWatched } from '../../hooks/mutations/useUpdateWatched';
+import { useReact } from '../../hooks/mutations/useReact';
 import { useNextUnwatchedItem } from '../../hooks/business/usePlayerFlow';
 import { EmbedPlayer } from './EmbedPlayer';
 import { Button } from '../ui/button';
@@ -7,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useSettings } from '../../hooks/queries/useSettings';
+import { Loader2 } from 'lucide-react';
 
 interface PlayerViewProps {
   threadId: number;
@@ -17,6 +19,7 @@ export function PlayerView({ threadId, itemId }: PlayerViewProps) {
   const navigate = useNavigate();
   const { data: item, isLoading, error } = useItem(itemId);
   const { mutate: updateWatched, isPending: isUpdatingWatched } = useUpdateWatched();
+  const { mutate: sendReactionMutate, isPending: isReacting } = useReact();
   const { data: nextItem, isLoading: isLoadingNext } = useNextUnwatchedItem(threadId, itemId);
   const { data: settings } = useSettings();
 
@@ -51,6 +54,27 @@ export function PlayerView({ threadId, itemId }: PlayerViewProps) {
       }
     );
   };
+
+  const handleSendReaction = () => {
+    if (!item) return;
+    sendReactionMutate(
+      { item_id: item.id, emoji: '❤' },
+      {
+        onSuccess: (data) => {
+          if (data.status === 'success') {
+            toast.success('Heart reaction sent ✓');
+          } else if (data.status === 'already_reacted') {
+            toast.info('Already reacted to this one');
+          }
+        },
+        onError: (error) => {
+          toast.error(`Reaction failed: ${error.message}`);
+        },
+      }
+    );
+  };
+
+  const hasReacted = item?.my_auto_sent_reaction === '❤' || item?.my_existing_reaction === '❤';
 
   if (isLoading) {
     return (
@@ -119,11 +143,20 @@ export function PlayerView({ threadId, itemId }: PlayerViewProps) {
         </Button>
         <Button
           variant="outline"
-          disabled
-          title="Coming in Phase 6"
+          disabled={hasReacted || isReacting}
+          onClick={handleSendReaction}
           size="lg"
         >
-          Send heart reaction
+          {isReacting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Reacting…
+            </>
+          ) : hasReacted ? (
+            'Heart sent ✓'
+          ) : (
+            'Send heart ❤'
+          )}
         </Button>
       </div>
 

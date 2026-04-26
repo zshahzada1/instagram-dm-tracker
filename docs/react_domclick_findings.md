@@ -290,3 +290,46 @@ appear on hover. This is a blocker for proceeding with Prompt 3 (Scanner Build) 
 *This document has been updated with findings from the spike run. **DOM click automation failed**
 due to reaction bar not appearing on hover. The mutation structure is validated, but the reaction
 automation needs debugging before proceeding with Prompt 3.*
+
+---
+
+## P6a/b confirmed selectors (2026-04-26)
+
+These supersede the original P2.75 findings above.
+
+### Bubble identification
+- Selector: `img[src*="cdninstagram"][src*="-15/"]`
+- Identification: match `img.src[:80]` against `items.media_url[:80]` from DB
+- Scrolling: `page.mouse.wheel(0, -600)` triggers IG virtual scroll (up to 20 attempts)
+
+### React button trigger
+- Strategy: `img.scroll_into_view_if_needed()` → `img.hover()` → 3.0s wait
+- Selector: `[aria-label*="React"]` (wildcard — label includes sender name, e.g. "React to message from isabellahay.nes")
+- Element type: `<svg>` (NOT a `<button>`)
+
+### Emoji picker container
+- Selector: `[role="dialog"]` — 1 visible after clicking react button
+- `[data-visualcompletion="ignore-dynamic"]` — 3 visible elements inside dialog
+
+### P6c confirmed selectors
+
+The emoji button inside the picker is discovered at runtime by `find_heart_in_picker()`.
+The following probe selectors are tried in order:
+
+1. `[role="dialog"] [aria-label="{emoji}"]`
+2. `[role="dialog"] [aria-label*="{emoji}"]`
+3. `[role="dialog"] [role="button"]:first-child`
+4. `[role="dialog"] div[role="button"]:first-child`
+5. `[role="dialog"] span[role="button"]:first-child`
+6. `[role="dialog"] button:first-child`
+
+The working selector is logged at runtime and recorded in the artifacts.
+See `artifacts/p6c_picker_dom.html` for the raw picker DOM dump from the most recent run.
+
+**Confirmed (2026-04-26 P6c live fire):**
+- Working emoji button selector: `[role="dialog"] div[role="button"]:first-child` (probe #4)
+- Emoji buttons are `<div role="button" aria-pressed="false">` containing `<span>` with the emoji text
+- No `aria-label` attributes on emoji buttons — uses text content only
+- First emoji in picker is always ❤️ (with variation selector)
+- Live fire test on item 3 (dexxiewho) succeeded: `"status": "success", "mutation_confirmed": true`
+- IGDirectReactionSendMutation captured with HTTP 200 after DOM-click on heart emoji

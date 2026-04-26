@@ -41,7 +41,7 @@ def parse_message_node(node: dict, viewer_interop_id: str) -> dict | None:
         return None
 
     content_type = node.get("content_type")
-    content = node.get("content", {})
+    content = node.get("content") or {}
     sender_fbid = node.get("sender_fbid")
     timestamp_ms = node.get("timestamp_ms")
 
@@ -68,7 +68,7 @@ def parse_message_node(node: dict, viewer_interop_id: str) -> dict | None:
     caption = None
     media_url = None
 
-    xma = content.get("xma", {}) if content.get("__typename") == "SlideMessageXMAContent" else {}
+    xma = (content.get("xma") or {}) if content.get("__typename") == "SlideMessageXMAContent" else {}
 
     if content_type == "MESSAGE_INLINE_SHARE":
         xma_typename = xma.get("__typename")
@@ -79,29 +79,32 @@ def parse_message_node(node: dict, viewer_interop_id: str) -> dict | None:
                 item_type = "reel"
                 media_shortcode = extract_shortcode(target_url)
                 poster_handle = xma.get("xmaHeaderTitle")
-                media_url = xma.get("xmaPreviewImage", {}).get("url")
+                preview = xma.get("xmaPreviewImage") or {}
+                media_url = preview.get("url")
 
         elif xma_typename == "SlideMessageStandardXMA":
             target_url = xma.get("target_url", "")
+            preview = xma.get("xmaPreviewImage") or {}
             if "carousel_share_child_media_id" in target_url:
                 item_type = "carousel"
                 media_shortcode = extract_shortcode(target_url)
                 poster_handle = xma.get("xmaHeaderTitle")
                 caption = xma.get("xmaTitle")
-                media_url = xma.get("xmaPreviewImage", {}).get("url")
+                media_url = preview.get("url")
             else:
                 item_type = "post"
                 media_shortcode = extract_shortcode(target_url)
                 poster_handle = xma.get("xmaHeaderTitle")
                 caption = xma.get("xmaTitle")
-                media_url = xma.get("xmaPreviewImage", {}).get("url")
+                media_url = preview.get("url")
 
     elif content_type == "MONTAGE_SHARE_XMA":
         item_type = "story"
         target_url = xma.get("target_url", "")
         media_shortcode = extract_shortcode(target_url)
         poster_handle = xma.get("xmaHeaderTitle")
-        media_url = xma.get("xmaPreviewImage", {}).get("url")
+        preview = xma.get("xmaPreviewImage") or {}
+        media_url = preview.get("url")
 
     if item_type is None:
         return None

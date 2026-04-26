@@ -124,79 +124,76 @@ def dismiss_overlays(page):
 
 def handle_pagination(page, capture: ThreadMessagesCapture, max_messages: int) -> Dict[str, Any]:
     """
-    Handle pagination by scrolling the message pane.
+    Trigger pagination via keyboard bursts on the focused conversation pane.
+
+    IG fires IGDMessageListOffMsysQuery when the message list is scrolled with
+    keyboard input. A burst of PageUp + ArrowUp + End/Home is needed to reliably
+    trigger the paginated query — a single keypress is not enough.
 
     Returns:
         Dict with pagination results.
     """
     initial_count = len(capture.extract_messages()["messages"])
 
-    selectors_to_try = [
-        '[data-pagelet="IGDMessagesList"]',
-        '[role="grid"]',
-    ]
+    # Focus the page — exact sequence from v2 probe keyboard fallback
+    try:
+        page.click('body')
+    except Exception:
+        pass
+    time.sleep(random.uniform(0.5, 1.0))
 
-    container = None
-    for selector in selectors_to_try:
-        try:
-            el = page.locator(selector).first
-            if el.is_visible():
-                container = el
-                break
-        except Exception:
-            continue
-
-    if container is None:
-        try:
-            container = page.locator('img[src*="cdninstagram.com"]').first
-            if container.is_visible():
-                container = container.locator('xpath=ancestor::*[contains(@style, "overflow") or contains(@style, "scroll") or @overflowY]').first
-        except Exception:
-            pass
-
-    if container is None:
-        return {
-            "success": False,
-            "reason": "Could not locate scrollable message container",
-            "messages_found": initial_count,
-            "attempts": 0,
-        }
-
-    consecutive_failures = 0
-    max_consecutive_failures = 3
+    consecutive_misses = 0
+    max_consecutive_misses = 2
     total_messages = initial_count
     attempts = 0
 
-    while total_messages < max_messages and consecutive_failures < max_consecutive_failures:
+    while total_messages < max_messages and consecutive_misses < max_consecutive_misses:
         attempts += 1
 
+        # Sequence matching the v2 probe keyboard fallback that works:
+        # body click → PageUp × 10 → wait → End → wait → Home → wait
+        for _ in range(10):
+            try:
+                page.keyboard.press("PageUp")
+            except Exception:
+                pass
+            time.sleep(0.3)
+
+        time.sleep(random.uniform(1.0, 2.0))
+
         try:
-            container.evaluate("el => el.scrollTop = 0")
-            time.sleep(random.uniform(1.5, 2.5))
-
-            for _ in range(3):
-                container.evaluate("el => el.scrollBy(0, -800)")
-                time.sleep(random.uniform(1.5, 2.5))
-
+            page.keyboard.press("End")
             time.sleep(random.uniform(2.0, 3.0))
-
-            current_messages = len(capture.extract_messages()["messages"])
-            if current_messages > total_messages:
-                total_messages = current_messages
-                consecutive_failures = 0
-            else:
-                consecutive_failures += 1
-
-            page_info = capture.extract_messages()["page_info"]
-            if page_info and not page_info.get("has_next_page", True):
-                break
-
+            page.keyboard.press("Home")
+            time.sleep(random.uniform(2.0, 3.0))
         except Exception:
-            consecutive_failures += 1
+            pass
+
+        # Settle time for the OffMsys query to fire
+        time.sleep(random.uniform(3.0, 4.0))
+
+        current_messages = len(capture.extract_messages()["messages"])
+        if current_messages > total_messages:
+            total_messages = current_messages
+            consecutive_misses = 0
+        else:
+            consecutive_misses += 1
+
+        page_info = capture.extract_messages()["page_info"]
+        if page_info and not page_info.get("has_next_page", True):
+            break
+
+    stop_reason = None
+    if consecutive_misses >= max_consecutive_misses:
+        stop_reason = f"No new queries after {max_consecutive_misses} consecutive misses"
+    elif total_messages >= max_messages:
+        stop_reason = f"Reached max_messages ({max_messages})"
+    elif capture.extract_messages()["page_info"] and not capture.extract_messages()["page_info"].get("has_next_page", True):
+        stop_reason = "has_next_page is false"
 
     return {
-        "success": consecutive_failures < max_consecutive_failures,
-        "reason": None if consecutive_failures < max_consecutive_failures else "No new queries after 3 scroll attempts",
+        "success": consecutive_misses < max_consecutive_misses,
+        "reason": stop_reason,
         "messages_found": total_messages,
         "attempts": attempts,
     }
@@ -248,14 +245,6 @@ def run_scan(thread_url: str, db_path: str, max_messages: int = 200) -> Dict[str
             cookies = load_cookies(str(cookie_path))
             context.add_cookies(cookies)
 
-            page.goto("https://www.instagram.com/direct/inbox/", timeout=60000, wait_until="domcontentloaded")
-            time.sleep(random.uniform(3.5, 4.5))
-
-            if check_blockers(page, timestamp):
-                raise Exception("Blocker detected at inbox")
-
-            dismiss_overlays(page)
-
             page.goto(thread_url, timeout=60000, wait_until="domcontentloaded")
             time.sleep(random.uniform(4.0, 5.0))
 
@@ -265,6 +254,11 @@ def run_scan(thread_url: str, db_path: str, max_messages: int = 200) -> Dict[str
             dismiss_overlays(page)
 
             time.sleep(random.uniform(8.0, 12.0))
+
+            # Set thread_internal_id on capture so OffMsys responses are matched
+            initial_extracted = capture.extract_messages()
+            if initial_extracted.get("thread_internal_id"):
+                capture.expected_thread_internal_id = initial_extracted["thread_internal_id"]
 
             pagination_result = handle_pagination(page, capture, max_messages)
 

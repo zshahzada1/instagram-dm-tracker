@@ -162,6 +162,11 @@ class MockRequest:
         self.method = "POST"
 
 
+# NOTE: These capture tests use the recon fixture which only contains
+# IGDThreadDetailMainViewContainerQuery data. IGDMessageListOffMsysQuery
+# is not in the fixture, so OffMsys pairing/filtering is tested by real scans.
+
+
 class MockResponse:
     """Minimal mock of Playwright response for capture tests."""
     def __init__(self, url, body):

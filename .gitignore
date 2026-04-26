@@ -40,3 +40,20 @@ wheels/
 # OS
 .DS_Store
 Thumbs.db
+
+# Database
+*.db
+
+# Node.js
+node_modules/
+package-lock.json
+*.log
+
+# Environment variables
+.env
+
+# UI build output
+ui/dist/
+
+# Debug files
+debug_*.py

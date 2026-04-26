@@ -1,0 +1,37 @@
+import { useQuery } from '@tanstack/react-query';
+import { getItems } from '../../api/items';
+import { ItemsParams, ItemsListResponse } from '../../types/api';
+
+export interface QueueFilters {
+  watched?: boolean;
+  item_type?: 'reel' | 'post' | 'carousel' | 'story';
+  sort?: 'sent_at_desc' | 'sent_at_asc';
+}
+
+export function useQueue(threadId: number, filters: QueueFilters = {}) {
+  return useQuery({
+    queryKey: ['queue', threadId, filters],
+    queryFn: () =>
+      getItems({
+        thread_id: threadId,
+        sender: 'her', // Default to showing only her messages
+        limit: 24,
+        ...filters,
+      }),
+  });
+}
+
+export function useLoadMore(threadId: number, offset: number, filters: QueueFilters = {}) {
+  return useQuery({
+    queryKey: ['queue', threadId, offset, filters],
+    queryFn: () =>
+      getItems({
+        thread_id: threadId,
+        sender: 'her',
+        limit: 24,
+        offset,
+        ...filters,
+      }),
+    enabled: offset > 0, // Only enable if we're loading more
+  });
+}

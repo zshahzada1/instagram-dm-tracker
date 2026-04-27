@@ -57,3 +57,6 @@ ui/dist/
 
 # Debug files
 debug_*.py
+
+# Windows metadata files
+*:Zone.Identifier
